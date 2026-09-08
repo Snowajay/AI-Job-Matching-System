@@ -8,7 +8,7 @@ from app.routers.candidates import get_stored_profile
 
 router = APIRouter(prefix="/matches", tags=["matches"])
 
-# Sample job listings standing in for a real jobs data source.
+# hardcoded until the jobs data source is ready
 SAMPLE_JOBS: list[JobListing] = [
     JobListing(
         job_id="job-101",

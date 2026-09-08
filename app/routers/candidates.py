@@ -8,12 +8,11 @@ from app.models.candidate import (
 
 router = APIRouter(prefix="/candidates", tags=["candidates"])
 
-# In-memory store until a real database is wired up.
+# TODO: swap for a real DB
 _profiles: dict[str, CandidateProfileUpdate] = {}
 
 
 def get_stored_profile(candidate_id: str) -> CandidateProfileUpdate | None:
-    """Used by other routers (e.g. matches) to read a candidate's saved profile."""
     return _profiles.get(candidate_id)
 
 
