@@ -1,11 +1,14 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import List, Optional
+from datetime import date
 
 
 class Experience(BaseModel):
     title: str
     company: str
-    years: float = Field(..., ge=0, description="Years spent in this role")
+    start_date: date
+    end_date: Optional[date] = None
+    description: Optional[str] = None
 
 
 class Education(BaseModel):
