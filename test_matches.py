@@ -13,7 +13,7 @@ client = TestClient(app)
 
 FULL_PROFILE = {
     "skills": ["Python", "FastAPI", "PostgreSQL"],
-    "experience": [{"title": "Backend Developer", "company": "Acme", "years": 2}],
+    "experience": [{"title": "Backend Developer", "company": "Acme", "start_date": "2022-01-01"}],
     "education": [{"qualification": "B.S. Computer Science", "institution": "UMGC"}],
 }
 
