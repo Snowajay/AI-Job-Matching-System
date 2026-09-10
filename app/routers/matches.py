@@ -1,7 +1,9 @@
 from datetime import date
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
 
+from app.database import get_db
 from app.models.candidate import compute_completeness
 from app.models.match import JobListing, MatchRequest, MatchResponse, MatchResult
 from app.routers.candidates import get_stored_profile
@@ -49,8 +51,8 @@ SAMPLE_JOBS: list[JobListing] = [
 
 
 @router.post("", response_model=MatchResponse)
-def create_matches(payload: MatchRequest):
-    profile = get_stored_profile(payload.candidate_id)
+def create_matches(payload: MatchRequest, db: Session = Depends(get_db)):
+    profile = get_stored_profile(payload.candidate_id, db)
     if profile is None:
         raise HTTPException(status_code=404, detail="Candidate profile not found")
 
