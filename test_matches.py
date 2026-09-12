@@ -28,6 +28,19 @@ def test_upsert_profile_marks_ready():
 
 def test_match_returns_ranked_results():
     client.put("/api/v1/candidates/cand-2/profile", json=FULL_PROFILE)
+    # Seed a job in the database whose required skills exactly match the
+    # candidate's skills, so it scores 100% and is guaranteed to rank first.
+    # Matching now reads jobs from the database, so the test provides its own
+    # known job rather than depending on any hardcoded sample data.
+    perfect_match_job = {
+        "job_id": "test-backend-match",
+        "title": "Backend Engineer",
+        "company": "Test Co",
+        "required_skills": FULL_PROFILE["skills"],
+        "posting_date": "2026-09-01",
+    }
+    client.post("/api/v1/jobs/", json=perfect_match_job)
+
     response = client.post("/api/v1/matches", json={"candidate_id": "cand-2", "limit": 5})
     assert response.status_code == 200
     matches = response.json()["matches"]
@@ -37,8 +50,9 @@ def test_match_returns_ranked_results():
     # scores are sorted from strongest to weakest
     scores = [m["score"] for m in matches]
     assert scores == sorted(scores, reverse=True)
-    # the backend role shares the most skills, so it should rank first
-    assert matches[0]["job_id"] == "job-101"
+    # the seeded job matches every required skill, so it should rank first
+    assert matches[0]["job_id"] == "test-backend-match"
+    assert matches[0]["score"] == 100.0
 
 
 def test_match_incomplete_profile_returns_422():
