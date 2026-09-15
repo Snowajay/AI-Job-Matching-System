@@ -10,6 +10,24 @@ jobs:
   backend-tests:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -22,9 +40,10 @@ jobs:
       - name: Install backend dependencies
         run: pip install -r requirements.txt
 
+      - name: Create test database tables
+        run: python -c "from app.database import Base, engine; import app.db_models; Base.metadata.create_all(bind=engine)"
+
       - name: Run backend tests
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: pytest -v
 
   frontend-build:
