@@ -23,6 +23,8 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run backend tests
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: pytest -v
 
   frontend-build:
