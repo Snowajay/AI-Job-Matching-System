@@ -1,16 +1,65 @@
-# React + Vite
+# AI-Powered Job Matching System - Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+This folder contains the React frontend for the AI-Powered Job Matching System.
 
-Currently, two official plugins are available:
+The frontend allows a candidate to:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Create and update a candidate profile
+- Enter skills
+- Enter education
+- Enter work experience
+- View available jobs
+- Find ranked job matches
 
-## React Compiler
+## Technologies
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+The frontend uses:
 
-## Expanding the Oxlint configuration
+- React
+- Vite
+- JavaScript
+- CSS
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+The frontend communicates with our FastAPI backend.
+
+## Running the Frontend
+
+Open a terminal and move into the frontend directory:
+
+cd frontend
+
+Install the required packages:
+
+npm install
+
+Start the development server:
+
+npm run dev
+
+Vite will display the local address for the frontend.
+
+## Backend
+
+The FastAPI backend must also be running for the API features to work.
+
+The frontend currently expects the backend at:
+
+http://127.0.0.1:8000
+
+## Current API Features
+
+The frontend communicates with the following backend features:
+
+- Candidate profiles
+- Job listings
+- Job matching
+
+## Alpha Version
+
+This project is currently an Alpha version.
+
+The candidate ID is temporarily set to:
+
+test-candidate
+
+A future version can replace this with the ID of the authenticated user.
