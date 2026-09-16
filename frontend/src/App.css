@@ -111,3 +111,13 @@ button:hover {
     font-size: 28px;
   }
 }
+
+.status-message {
+  max-width: 1060px;
+  margin: 20px auto 0;
+  padding: 12px 20px;
+  background: white;
+  border-radius: 6px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
