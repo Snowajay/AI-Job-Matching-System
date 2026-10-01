@@ -5,11 +5,27 @@ profile and the matching endpoint: a complete profile returns ranked
 matches, an incomplete profile is refused, and an unknown candidate 404s.
 """
 
+import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import text
 
+from app.database import engine
 from app.main import app
 
 client = TestClient(app)
+
+TEST_CANDIDATE_IDS = ["cand-1", "cand-2", "cand-3"]
+
+
+@pytest.fixture(autouse=True, scope="module")
+def cleanup_test_candidates():
+    yield
+    with engine.begin() as conn:
+        conn.execute(
+            text("DELETE FROM candidates WHERE candidate_id = ANY(:ids)"),
+            {"ids": TEST_CANDIDATE_IDS},
+        )
+
 
 FULL_PROFILE = {
     "skills": ["Python", "FastAPI", "PostgreSQL"],
