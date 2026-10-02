@@ -245,3 +245,7 @@ an in-memory list inside the running process, which resets on every restart and 
 across workers. The matching endpoint doesn't read that list either — it scores against a
 fixed sample list defined directly in `app/routers/matches.py`. Backing jobs with a real table
 (matching the `candidates` pattern) and wiring matching to read from it is outstanding work.
+
+Row Level Security is enabled on both the candidates and jobs tables in Supabase. Neither
+table is reachable through Supabase's own client side API; the FastAPI backend is the only
+consumer, connecting directly through SQLAlchemy.
