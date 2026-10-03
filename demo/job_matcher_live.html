@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Job Matcher (Live)</title>
+<style>
+  :root {
+    --bg:#0f1419; --panel:#1a222c; --panel2:#141b23; --line:#2a3542;
+    --text:#e6edf3; --muted:#9aa7b4; --accent:#4f9cf9; --accent2:#2d6fd6;
+    --good:#3fb950; --goodbg:#11331c; --chip:#213043; --barbg:#1f2a37;
+    --warn:#d29922; --bad:#f85149;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg:#eef1f5; --panel:#ffffff; --panel2:#f3f6fa; --line:#d8dee6;
+      --text:#17202b; --muted:#5a6b7b; --accent:#2d6fd6; --accent2:#1f58b0;
+      --good:#1a7f37; --goodbg:#e4f3e8; --chip:#e8eef6; --barbg:#e4e9f0;
+      --warn:#9a6700; --bad:#cf222e;
+    }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text);
+    font:16px/1.55 -apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; padding:24px 16px 48px; }
+  .wrap { max-width:880px; margin:0 auto; }
+  .eyebrow { color:var(--accent); font-size:13px; letter-spacing:.08em; text-transform:uppercase; font-weight:700; margin:0 0 6px; }
+  h1 { font-size:27px; margin:0 0 6px; line-height:1.15; }
+  .lede { color:var(--muted); margin:0 0 6px; font-size:15px; }
+  .live { display:inline-flex; align-items:center; gap:7px; font-size:12.5px; color:var(--muted); margin:0 0 20px; }
+  .dot { width:9px; height:9px; border-radius:50%; background:var(--bad); flex:0 0 auto; }
+  .dot.on { background:var(--good); }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px 20px; margin-bottom:16px; }
+  .card h2 { font-size:14px; margin:0 0 14px; letter-spacing:.02em; color:var(--text); }
+  label { display:block; font-size:12.5px; color:var(--muted); margin:10px 0 4px; font-weight:600; }
+  input, textarea { width:100%; background:var(--panel2); color:var(--text); border:1px solid var(--line);
+    border-radius:8px; padding:10px 11px; font:inherit; }
+  input:focus, textarea:focus { outline:none; border-color:var(--accent); }
+  textarea { min-height:52px; resize:vertical; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+  @media (max-width:640px){ .grid2,.grid3 { grid-template-columns:1fr; } }
+  .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:16px; }
+  button.primary { background:var(--accent); color:#fff; border:0; border-radius:9px; padding:12px 22px; font:inherit; font-weight:700; cursor:pointer; }
+  button.primary:hover { background:var(--accent2); }
+  button.primary:disabled { opacity:.6; cursor:default; }
+  button.ghost { background:transparent; color:var(--muted); border:1px solid var(--line); border-radius:9px; padding:11px 15px; font:inherit; cursor:pointer; }
+  button.ghost:hover { color:var(--text); }
+  .small { font-size:12px; color:var(--muted); margin-top:8px; }
+  .status { font-size:13px; margin-top:12px; padding:10px 12px; border-radius:8px; display:none; }
+  .status.show { display:block; }
+  .status.ok { background:var(--goodbg); color:var(--good); }
+  .status.warn { background:rgba(210,153,34,.12); color:var(--warn); }
+  .status.err { background:rgba(248,81,73,.12); color:var(--bad); }
+  .results h2 { font-size:15px; color:var(--muted); font-weight:700; margin:4px 0 12px; }
+  .endpoint { font-family:ui-monospace,Consolas,monospace; font-size:12px; color:var(--muted); }
+  .job { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px 18px; margin-bottom:12px; }
+  .job-top { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+  .rank { color:var(--muted); font-size:13px; font-weight:700; }
+  .job h3 { margin:2px 0; font-size:18px; }
+  .company { color:var(--muted); font-size:14px; }
+  .score { text-align:right; flex:0 0 auto; }
+  .score .pct { font-size:22px; font-weight:800; color:var(--good); }
+  .score .lab { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
+  .bar { height:7px; background:var(--barbg); border-radius:6px; overflow:hidden; margin:12px 0 10px; }
+  .bar > span { display:block; height:100%; background:var(--good); }
+  .reasons { display:flex; flex-wrap:wrap; gap:7px; }
+  .rchip { background:var(--goodbg); color:var(--good); border-radius:16px; padding:3px 10px; font-size:12.5px; font-weight:600; }
+  .meta { color:var(--muted); font-size:12.5px; margin-top:10px; }
+  .empty { background:var(--panel2); border:1px dashed var(--line); border-radius:12px; padding:22px; text-align:center; color:var(--muted); }
+  details { margin-top:6px; }
+  summary { cursor:pointer; color:var(--muted); font-size:12.5px; }
+  pre { background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:10px; overflow:auto; font-size:12px; color:var(--text); }
+  .note { color:var(--muted); font-size:12.5px; margin-top:22px; line-height:1.6; border-top:1px solid var(--line); padding-top:16px; }
+  .note b { color:var(--text); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">AI-Powered Job Matching System</p>
+  <h1>Find jobs that match your skills</h1>
+  <p class="lede">Build your candidate profile and get ranked job matches.</p>
+  <p class="live"><span class="dot" id="dot"></span><span id="livelabel">Checking connection to the live API…</span></p>
+
+  <div class="card">
+    <h2>Connection</h2>
+    <label for="base">Live API base URL</label>
+    <input id="base" value="http://127.0.0.1:8000" />
+    <div class="small">This page talks to your running FastAPI + PostgreSQL backend. Start it with <code>uvicorn app.main:app --reload</code>, and serve this page from <code>http://localhost:5174</code> so the browser allows the calls.</div>
+    <div class="row">
+      <button class="ghost" onclick="checkHealth()">Test connection</button>
+      <button class="ghost" onclick="seedJobs()">Seed sample jobs</button>
+    </div>
+    <div class="small">New database with no jobs yet? Click <b>Seed sample jobs</b> once — it posts a few jobs to your real database through <span class="endpoint">POST /api/v1/jobs/</span>.</div>
+    <div class="status" id="connStatus"></div>
+  </div>
+
+  <div class="card">
+    <h2>Your candidate profile</h2>
+    <label for="skills">Skills (comma-separated)</label>
+    <textarea id="skills">Python, FastAPI, PostgreSQL</textarea>
+    <label>Experience</label>
+    <div class="grid3">
+      <input id="expTitle" placeholder="Job title" value="Backend Developer" />
+      <input id="expCompany" placeholder="Company" value="Acme" />
+      <input id="expStart" type="date" value="2022-01-01" />
+    </div>
+    <label>Education</label>
+    <div class="grid2">
+      <input id="eduQual" placeholder="Qualification" value="B.S. Computer Science" />
+      <input id="eduInst" placeholder="Institution" value="UMGC" />
+    </div>
+    <div class="row">
+      <button class="primary" id="goBtn" onclick="findMatches()">Find my matches</button>
+    </div>
+    <div class="small">Matching needs skills, experience, and education, exactly like the real system. Edit your skills above and run it again to see the ranking change.</div>
+    <div class="status" id="profStatus"></div>
+  </div>
+
+  <div class="results" id="results"></div>
+
+  <p class="note">
+    <b>This is the live system.</b> Every result below is returned by your running backend: this page saves your profile with <span class="endpoint">PUT /api/v1/candidates/&lt;id&gt;/profile</span>, reads jobs from the database with <span class="endpoint">GET /api/v1/jobs/</span>, and runs the match with <span class="endpoint">POST /api/v1/matches</span>. The scores and ranking are computed by the server, not by this page.<br>
+    <b>Known limitation:</b> skills are matched by exact word (case-insensitive), so "JS" will not match "JavaScript". A skill-synonym layer is planned.
+  </p>
+</div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const base = () => $("base").value.replace(/\/+$/, "");
+  const CAND_ID = "demo-candidate";
+
+  function setStatus(el, kind, msg) {
+    el.className = "status show " + kind;
+    el.innerHTML = msg;
+  }
+  function clearStatus(el){ el.className = "status"; el.innerHTML = ""; }
+
+  async function api(method, path, body) {
+    const opts = { method, headers: {} };
+    if (body !== undefined) { opts.headers["Content-Type"] = "application/json"; opts.body = JSON.stringify(body); }
+    const res = await fetch(base() + path, opts);
+    const text = await res.text();
+    let data; try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+    return { status: res.status, ok: res.ok, data };
+  }
+
+  async function checkHealth() {
+    const dot = $("dot"), lab = $("livelabel"), st = $("connStatus");
+    try {
+      const r = await api("GET", "/");
+      if (r.ok) {
+        dot.classList.add("on");
+        lab.textContent = "Connected to live API at " + base();
+        setStatus(st, "ok", "Connected. Server says: " + JSON.stringify(r.data));
+      } else {
+        dot.classList.remove("on");
+        lab.textContent = "API responded with an error";
+        setStatus(st, "warn", "HTTP " + r.status + " from " + base());
+      }
+    } catch (e) {
+      dot.classList.remove("on");
+      lab.textContent = "Not connected to the API";
+      setStatus(st, "err", "Could not reach " + base() + ". Is the backend running, and is this page served from http://localhost:5174? (" + e + ")");
+    }
+  }
+
+  const SAMPLE_JOBS = [
+    { job_id:"job-be", title:"Backend Engineer",          company:"Test Co",      required_skills:["Python","FastAPI","PostgreSQL"],             posting_date:"2026-09-01" },
+    { job_id:"job-de", title:"Data Engineer",             company:"DataWorks",    required_skills:["Python","Spark","AWS","Kafka"],              posting_date:"2026-09-02" },
+    { job_id:"job-fs", title:"Full Stack Developer",      company:"Webify",       required_skills:["JavaScript","React","Node.js","PostgreSQL"], posting_date:"2026-09-05" },
+    { job_id:"job-ml", title:"Machine Learning Engineer", company:"Insight AI",   required_skills:["Python","TensorFlow","PyTorch","SQL"],       posting_date:"2026-09-07" },
+    { job_id:"job-fe", title:"Frontend Developer",        company:"Pixel Labs",   required_skills:["JavaScript","React","CSS","HTML"],           posting_date:"2026-09-09" },
+    { job_id:"job-do", title:"DevOps Engineer",           company:"CloudOps",     required_skills:["Docker","Kubernetes","AWS","Linux"],         posting_date:"2026-09-11" },
+    { job_id:"job-qa", title:"QA Automation Engineer",    company:"QualityFirst", required_skills:["Python","Selenium","pytest"],                posting_date:"2026-09-12" },
+    { job_id:"job-mb", title:"Mobile Developer",          company:"Appology",     required_skills:["Swift","Kotlin","Java"],                     posting_date:"2026-09-14" },
+  ];
+
+  async function seedJobs() {
+    const st = $("connStatus");
+    setStatus(st, "warn", "Seeding sample jobs into the database…");
+    try {
+      let n = 0;
+      for (const j of SAMPLE_JOBS) {
+        const r = await api("POST", "/api/v1/jobs/", j);
+        if (r.ok) n++;
+      }
+      setStatus(st, "ok", "Seeded " + n + " of " + SAMPLE_JOBS.length + " jobs via POST /api/v1/jobs/. You can now run a match.");
+    } catch (e) {
+      setStatus(st, "err", "Could not reach the API to seed jobs. (" + e + ")");
+    }
+  }
+
+  async function findMatches() {
+    const st = $("profStatus"), out = $("results"), btn = $("goBtn");
+    const skills = $("skills").value.split(",").map(s => s.trim()).filter(Boolean);
+    const profile = {
+      skills,
+      experience: [{ title: $("expTitle").value.trim(), company: $("expCompany").value.trim(), start_date: $("expStart").value }],
+      education: [{ qualification: $("eduQual").value.trim(), institution: $("eduInst").value.trim() }],
+    };
+
+    if (skills.length === 0) { setStatus(st, "warn", "Add at least one skill."); return; }
+    if (!$("expStart").value) { setStatus(st, "warn", "Experience needs a start date."); return; }
+
+    btn.disabled = true; out.innerHTML = "";
+    setStatus(st, "warn", "Saving profile and running the match against the live API…");
+    try {
+      // 1) Save the profile for real
+      const put = await api("PUT", "/api/v1/candidates/" + CAND_ID + "/profile", profile);
+      if (!put.ok) {
+        setStatus(st, "err", "Profile save failed (HTTP " + put.status + "): " + JSON.stringify(put.data));
+        btn.disabled = false; return;
+      }
+      const comp = put.data.completeness || {};
+      // 2) Read real jobs so we can show titles alongside the matched ids
+      const jobsRes = await api("GET", "/api/v1/jobs/");
+      const jobMap = {};
+      if (jobsRes.ok && Array.isArray(jobsRes.data)) jobsRes.data.forEach(j => { jobMap[j.job_id] = j; });
+      // 3) Run the real match
+      const m = await api("POST", "/api/v1/matches", { candidate_id: CAND_ID, limit: 10 });
+      if (m.status === 422) {
+        setStatus(st, "warn", "The system refused the match because the profile is incomplete: " + JSON.stringify(m.data.detail));
+        btn.disabled = false; return;
+      }
+      if (!m.ok) {
+        setStatus(st, "err", "Match failed (HTTP " + m.status + "): " + JSON.stringify(m.data));
+        btn.disabled = false; return;
+      }
+      setStatus(st, "ok", "Profile saved (match-ready: " + comp.is_match_ready + "). Live match returned HTTP " + m.status + ".");
+      render(m.data, jobMap, m.status);
+    } catch (e) {
+      setStatus(st, "err", "Could not reach the API. Is the backend running and this page served from http://localhost:5174? (" + e + ")");
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function render(data, jobMap, httpStatus) {
+    const out = $("results");
+    const matches = (data && data.matches) || [];
+    if (matches.length === 0) {
+      out.innerHTML = '<div class="empty">The live match returned no jobs. If the database has no jobs yet, click <b>Seed sample jobs</b> above, then run the match again.</div>';
+      return;
+    }
+    let html = '<h2>' + matches.length + ' live match' + (matches.length===1?'':'es') +
+      ' &middot; <span class="endpoint">POST /api/v1/matches &rarr; HTTP ' + httpStatus + '</span></h2>';
+    matches.forEach(mm => {
+      const job = jobMap[mm.job_id] || {};
+      const title = job.title || mm.job_id;
+      const company = job.company || "";
+      const reqCount = (job.required_skills || []).length;
+      const reasonChips = (mm.reasons || []).map(r => '<span class="rchip">' + esc(r) + '</span>').join('');
+      html +=
+        '<div class="job"><div class="job-top"><div>' +
+          '<div class="rank">#' + mm.rank + '</div>' +
+          '<h3>' + esc(title) + '</h3>' +
+          (company ? '<div class="company">' + esc(company) + '</div>' : '') +
+          '<div class="company endpoint">' + esc(mm.job_id) + '</div>' +
+        '</div><div class="score"><div class="pct">' + mm.score + '%</div><div class="lab">match</div></div></div>' +
+        '<div class="bar"><span style="width:' + Math.min(100, mm.score) + '%"></span></div>' +
+        '<div class="reasons">' + reasonChips + '</div>' +
+        '<div class="meta">' + (mm.reasons ? mm.reasons.length : 0) + (reqCount ? ' of ' + reqCount : '') +
+          ' required skills matched &middot; posted ' + (mm.posting_date || job.posting_date || '') + '</div>' +
+        '</div>';
+    });
+    html += '<details><summary>Show raw API response</summary><pre>' + esc(JSON.stringify(data, null, 2)) + '</pre></details>';
+    out.innerHTML = html;
+  }
+
+  function esc(s){ return String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+  checkHealth();
+</script>
+</body>
+</html>
