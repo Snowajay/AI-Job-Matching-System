@@ -15,8 +15,15 @@ def job(skills):
     return SimpleNamespace(required_skills=skills)
 
 
+def tfidf_matcher():
+    """A matcher pinned to the TF-IDF engine (no embeddings), so these tests
+    exercise the spelling/synonym layer deterministically regardless of whether
+    an embedding model happens to be installed in the environment."""
+    return SkillMatcher(embedding_provider=None)
+
+
 def test_synonyms_and_abbreviations_match():
-    matcher = SkillMatcher()
+    matcher = tfidf_matcher()
     results = matcher.rank(
         ["JS", "Postgres", "ML"],
         [job(["JavaScript", "PostgreSQL", "Machine Learning"])],
@@ -29,7 +36,7 @@ def test_synonyms_and_abbreviations_match():
 
 
 def test_exact_matching_is_backward_compatible():
-    matcher = SkillMatcher()
+    matcher = tfidf_matcher()
     results = matcher.rank(
         ["Python", "FastAPI", "PostgreSQL"],
         [
@@ -46,13 +53,13 @@ def test_exact_matching_is_backward_compatible():
 
 
 def test_unrelated_skills_are_excluded():
-    matcher = SkillMatcher()
+    matcher = tfidf_matcher()
     results = matcher.rank(["Python"], [job(["Photoshop", "Illustrator"])])
     assert results == []
 
 
 def test_close_variant_matches_but_false_friend_does_not():
-    matcher = SkillMatcher()
+    matcher = tfidf_matcher()
     # "Kubernete" is a near-spelling of "Kubernetes" and should match by
     # similarity; "Java" is not "JavaScript" and should not.
     results = matcher.rank(

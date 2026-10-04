@@ -51,4 +51,16 @@ def create_matches(payload: MatchRequest, db: Session = Depends(get_db)):
         for index, (score, job, reasons) in enumerate(top_matches)
     ]
 
-    return MatchResponse(candidate_id=payload.candidate_id, matches=matches)
+    engine = default_matcher.engine or "synonym"
+    engine_label = {
+        "embeddings": "AI semantic model (neural embeddings)",
+        "tfidf": "AI keyword matching (TF-IDF + synonyms)",
+        "synonym": "synonym matching",
+    }.get(engine, engine)
+
+    return MatchResponse(
+        candidate_id=payload.candidate_id,
+        matches=matches,
+        engine=engine,
+        engine_label=engine_label,
+    )

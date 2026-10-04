@@ -198,9 +198,31 @@ Candidate profiles and job listings are stored in the shared database so that th
 
 ### Matching Approach
 
-The matching feature uses an AI-powered skill matcher (`app/matching.py`) that compares candidate skills to job-required skills by meaning rather than by exact text. It combines two natural language processing techniques:
+The matching feature uses an AI-powered skill matcher (`app/matching.py`) that compares candidate skills to job-required skills by meaning rather than by exact text. It is built as layered AI, where each layer is tried in turn and the system degrades gracefully if a layer is unavailable, so the endpoint never fails.
 
-- A curated skill-synonym layer that canonicalizes common abbreviations and variants, so "JS" is treated as "JavaScript", "Postgres" as "PostgreSQL", and "ML" as "Machine Learning".
-- TF-IDF character n-gram vectors with cosine similarity (scikit-learn), which catches closely related spellings and minor variants the synonym map does not list, such as "ReactJS" and "React" or a misspelled "Kubernete". A similarity threshold keeps genuinely different skills apart, so "Java" does not match "JavaScript".
+1. Curated skill-synonym layer (knowledge-based): canonicalizes common abbreviations and variants, so "JS" is treated as "JavaScript", "Postgres" as "PostgreSQL", and "ML" as "Machine Learning".
+2. Semantic embeddings (a real AI model, optional): a pretrained sentence-transformer (default `all-MiniLM-L6-v2`, in `app/embeddings.py`) turns each skill into a vector that encodes meaning, so skills that are written completely differently but mean related things still match, such as "PyTorch" with "Deep Learning" or "Scrum" with "Agile". A hosted embeddings API (OpenAI-compatible) can be used as a backup when the local model is not installed.
+3. TF-IDF character n-gram vectors with cosine similarity (scikit-learn): the always-available fallback that catches closely related spellings and minor variants, such as "ReactJS" and "React" or a misspelled "Kubernete".
 
-A job's match score is the percentage of its required skills the candidate has, where "has" now allows semantic equivalence instead of only an exact string match. Jobs with no matched skills are excluded, the rest are ranked from highest to lowest score, and each result lists the matched skills as reasons, including how an equivalent skill was recognized. This adds real value over exact matching: a candidate who lists "JS, Postgres, ML" is now correctly matched to a job requiring "JavaScript, PostgreSQL, Machine Learning", which exact matching would have scored at zero. The matcher degrades gracefully to synonym-aware exact matching if scikit-learn is unavailable, so the endpoint never fails. The score stays clear and explainable.
+A similarity threshold keeps genuinely different skills apart. A job's match score is the percentage of its required skills the candidate has, where "has" allows semantic equivalence instead of only an exact string match. Jobs with no matched skills are excluded, the rest are ranked from highest to lowest score, and each result lists the matched skills as reasons, including how each was recognized (for example "AI recognized your 'JS' as JavaScript" or "AI semantic match: 'Deep Learning' ~ your 'PyTorch' (71% related)"). The matcher degrades gracefully: embeddings to TF-IDF to synonym-aware exact matching, so results stay clear and explainable in every configuration.
+
+#### Enabling the embedding (AI-model) layer
+
+The default install uses the synonym + TF-IDF layers, which need no extra setup and keep CI light. To turn on the semantic-embedding layer:
+
+- Local model (recommended): `pip install -r requirements-embeddings.txt`. The first run downloads the model (~90 MB) and caches it; afterward it runs offline and private.
+- Hosted API backup: set `OPENAI_API_KEY` (no extra packages needed). Optionally set `AJMS_EMBEDDING_API_BASE` / `AJMS_EMBEDDING_API_MODEL` for an OpenAI-compatible provider.
+
+Selection is controlled by `AJMS_EMBEDDINGS` (`auto` by default; also `local`, `api`, or `off`). In `auto`, the matcher prefers the local model, then the API, then TF-IDF.
+
+Tuning knobs (all optional environment variables), useful because a small model gives modest similarity to bare skill tokens:
+
+- `AJMS_EMBEDDING_MODEL` — swap the local model (e.g. `all-mpnet-base-v2` is stronger but slower than the default `all-MiniLM-L6-v2`).
+- `AJMS_EMBEDDING_TEMPLATE` — wraps each skill in context before embedding; defaults to `"a technology skill: {skill}"` because measurements showed it lifts related pairs substantially (e.g. PyTorch~Deep Learning 36%→60%). Must contain `{skill}`; set it to empty to embed bare tokens.
+- `AJMS_EMBEDDING_THRESHOLD` — the semantic match cutoff (default `0.45`).
+
+Distinct-skills guard: because a semantic model rates genuinely different skills like "Java"/"JavaScript" (~65%) as highly as real matches, `DISTINCT_GROUPS` in `app/matching.py` lists sets that must never cross-match (Java/JavaScript, C/C++/C#, React/React Native, ...). This keeps the precision of exact matching while embeddings add recall. `verify_embeddings.py` prints each pair's raw model similarity so you can tune against real numbers.
+
+#### Future work (beta, not enabled)
+
+`app/llm_matching.py` scaffolds an optional LLM post-step that could extract skills from a free-text resume or write a natural-language "why this is a good fit" explanation and re-rank the shortlist. It is deliberately not wired into the endpoint: it is non-deterministic, needs an API key, and would run only as an additive step on top of the deterministic result.
