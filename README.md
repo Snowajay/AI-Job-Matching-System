@@ -198,8 +198,9 @@ Candidate profiles and job listings are stored in the shared database so that th
 
 ### Matching Approach
 
-The current matching feature uses a skill-based ranking algorithm. Candidate skills and job-required skills are normalized to lowercase before comparison. The system identifies overlapping skills and calculates a match score using the percentage of required job skills found in the candidate's profile.
+The matching feature uses an AI-powered skill matcher (`app/matching.py`) that compares candidate skills to job-required skills by meaning rather than by exact text. It combines two natural language processing techniques:
 
-Jobs with no matching skills are excluded from the results. The remaining jobs are ranked from highest to lowest score, and the interface displays the matching skills as reasons for each result.
+- A curated skill-synonym layer that canonicalizes common abbreviations and variants, so "JS" is treated as "JavaScript", "Postgres" as "PostgreSQL", and "ML" as "Machine Learning".
+- TF-IDF character n-gram vectors with cosine similarity (scikit-learn), which catches closely related spellings and minor variants the synonym map does not list, such as "ReactJS" and "React" or a misspelled "Kubernete". A similarity threshold keeps genuinely different skills apart, so "Java" does not match "JavaScript".
 
-This approach provides a clear and explainable foundation for job matching. Future development could expand the system with machine learning or natural language processing to evaluate factors beyond direct skill overlap.
+A job's match score is the percentage of its required skills the candidate has, where "has" now allows semantic equivalence instead of only an exact string match. Jobs with no matched skills are excluded, the rest are ranked from highest to lowest score, and each result lists the matched skills as reasons, including how an equivalent skill was recognized. This adds real value over exact matching: a candidate who lists "JS, Postgres, ML" is now correctly matched to a job requiring "JavaScript, PostgreSQL, Machine Learning", which exact matching would have scored at zero. The matcher degrades gracefully to synonym-aware exact matching if scikit-learn is unavailable, so the endpoint never fails. The score stays clear and explainable.
