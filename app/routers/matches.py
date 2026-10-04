@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.db_models import Job
+from app.matching import default_matcher
 from app.models.candidate import compute_completeness
 from app.models.match import MatchRequest, MatchResponse, MatchResult
 from app.routers.candidates import get_stored_profile
@@ -28,26 +29,15 @@ def create_matches(payload: MatchRequest, db: Session = Depends(get_db)):
             },
         )
 
-    candidate_skills = {skill.lower() for skill in profile.skills}
-
-    # Read job listings from the shared database (the jobs table London
-    # connected in PR #5) instead of a hardcoded in-memory list, so matching
-    # runs against the same data everyone else on the team is using.
+    # Read job listings from the shared database (the jobs table connected in
+    # PR #5) instead of a hardcoded in-memory list, so matching runs against the
+    # same data everyone else on the team is using.
     jobs = db.query(Job).all()
 
-    scored = []
-    for job in jobs:
-        job_skills = {skill.lower() for skill in job.required_skills}
-        if not job_skills:
-            continue
-        overlap = candidate_skills & job_skills
-        if not overlap:
-            continue
-        score = round(len(overlap) / len(job_skills) * 100, 2)
-        reasons = [f"Matches required skill: {skill}" for skill in sorted(overlap)]
-        scored.append((score, job, reasons))
-
-    scored.sort(key=lambda item: item[0], reverse=True)
+    # Score with the AI skill matcher (semantic synonym + TF-IDF similarity)
+    # rather than exact string overlap, so equivalent skills written
+    # differently ("JS"/"JavaScript", "Postgres"/"PostgreSQL") still match.
+    scored = default_matcher.rank(profile.skills, jobs)
     top_matches = scored[: payload.limit]
 
     matches = [
@@ -61,4 +51,16 @@ def create_matches(payload: MatchRequest, db: Session = Depends(get_db)):
         for index, (score, job, reasons) in enumerate(top_matches)
     ]
 
-    return MatchResponse(candidate_id=payload.candidate_id, matches=matches)
+    engine = default_matcher.engine or "synonym"
+    engine_label = {
+        "embeddings": "AI semantic model (neural embeddings)",
+        "tfidf": "AI keyword matching (TF-IDF + synonyms)",
+        "synonym": "synonym matching",
+    }.get(engine, engine)
+
+    return MatchResponse(
+        candidate_id=payload.candidate_id,
+        matches=matches,
+        engine=engine,
+        engine_label=engine_label,
+    )
