@@ -1,0 +1,16 @@
+# Optional: the semantic-embedding (AI-model) layer for matching.
+#
+# Installing these enables app/embeddings.py's LocalEmbeddingProvider, which
+# loads a pretrained sentence-transformer model so skills are matched by MEANING
+# (e.g. "PyTorch" ~ "Deep Learning") instead of only spelling. The first run
+# downloads the model (~90 MB) and caches it; it then runs offline.
+#
+# These are intentionally kept OUT of requirements.txt so the default install
+# and CI stay light; the matcher falls back to TF-IDF when they are absent.
+#
+#   pip install -r requirements-embeddings.txt
+#
+# The hosted-API backup (ApiEmbeddingProvider) needs no extra packages -- it
+# uses the standard library and an OPENAI_API_KEY environment variable.
+
+sentence-transformers>=2.2

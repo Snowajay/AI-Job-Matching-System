@@ -21,3 +21,6 @@ class MatchResult(BaseModel):
 class MatchResponse(BaseModel):
     candidate_id: str
     matches: List[MatchResult]
+    # Which AI engine actually produced these matches, so the UI can show it.
+    engine: Optional[str] = None          # "embeddings" | "tfidf" | "synonym"
+    engine_label: Optional[str] = None    # human-friendly label for the UI

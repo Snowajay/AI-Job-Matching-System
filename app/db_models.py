@@ -1,4 +1,4 @@
-from sqlalchemy import Column, DateTime, String
+from sqlalchemy import Column, Date, DateTime, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.sql import func
 
@@ -13,3 +13,12 @@ class Candidate(Base):
     experience = Column(JSONB, nullable=False, default=list)
     education = Column(JSONB, nullable=False, default=list)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+class Job(Base):
+    __tablename__ = "jobs"
+
+    job_id = Column(String, primary_key=True)
+    title = Column(String, nullable=False)
+    company = Column(String, nullable=False)
+    required_skills = Column(JSONB, nullable=False, default=list)
+    posting_date = Column(Date, nullable=False)
