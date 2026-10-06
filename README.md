@@ -379,7 +379,7 @@ Review the ranked results to compare the candidate's skills with the available p
 
 ## Testing and Code Quality
 
-The backend includes automated integration tests using Pytest. The test suite validates the matching workflow as well as error handling for incomplete and missing candidate profiles.
+The backend includes automated tests using Pytest: integration tests covering the matching workflow and error handling for incomplete and missing candidate profiles, plus dedicated tests for the AI matching logic and the embeddings layer.
 
 To run the backend tests:
 
@@ -393,13 +393,15 @@ To run the tests with a coverage report:
 pytest --cov=app --cov-report=term-missing
 ```
 
-During final system validation, all 4 automated backend tests passed. The backend achieved 92% total code coverage across 196 statements.
+During final system validation, after the AI matching integration, all 15 automated backend tests passed. The backend achieved 87% total code coverage across 395 statements.
 
-Coverage results for key API routes included:
+Coverage results for key modules and routes included:
 
 - Candidate routes: 87%
 - Job routes: 76%
-- Matching routes: 94%
+- Matching routes: 100%
+- Matching logic: 93%
+- Embeddings module: 85%
 
 The frontend was also validated using a production Vite build. The production build completed successfully.
 
